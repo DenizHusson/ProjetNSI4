@@ -1,3 +1,5 @@
+from turtle import *
+
 class graph() :
     def __init__(self) :
         self.dico = {}
@@ -12,6 +14,11 @@ class graph() :
     def addArete(self,sa,sb) :
         self.dico[sa].append(sb)
         self.dico[sb].append(sa)
+
+def showLabyrinthe(nbli,nbcol,dist):
+    cadre(nbli,nbcol,dist)
+    paroisVerticales(nbli,nbcol,dist)
+    paroisHorizontales(nbli,nbcol,dist)
 
 
 LstSommet = graph()
@@ -65,3 +72,5 @@ for i in arretes:
     LstSommet.addArete(i[0],i[1])
 
 print(LstSommet)
+
+
