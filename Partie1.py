@@ -1,21 +1,25 @@
-from turtle import *
+import turtle
 
 
 # À faire : création d'une erreur personnalisée pour les besoins de la classe
 
 
-class Graph():
+class Graphe():
     """
     Objet représentant un multigraphe non orienté à l'aide d'un dictionnaire
-    associant à chacun des sommets du graphe ses voisins. Chaque sommmet est
-    représenté par un couple en tuple, correspondant aux coordonnées du sommet.
+    associant à chacun des sommets du graphe un ensemble de ses voisins. Chaque
+    sommet est représenté par un couple en tuple, correspondant aux coordonnées
+    strictement positives du sommet.
     Attributs:
         dico: dict, un dictionnaire des sommets voisins
     """
     # À faire : le graphe ne peut pas contenir de boucles, ni d'arêtes
-    # multiples. Il est possible de prévenir les boucles (seulement si le prix
-    # n'est pas plus grand) ou d'utiliser des ensembles pour les voisins d'un
-    # sommet.
+    # multiples. Il est possible de prévenir les boucles (seulement si le coût
+    # n'est pas plus grand).
+
+    # Constantes de classe
+    DEPARTX = -320
+    DEPARTY = 250
 
     def __init__(self) -> None:
         """
@@ -46,7 +50,7 @@ class Graph():
                 sommet: tuple, un couple représentant les coordonnées du sommet
         """
         if sommet not in self.dico:
-            self.dico[sommet] = []
+            self.dico[sommet] = set()
 
     def addArete(self, sa: tuple, sb: tuple) -> None:
         """
@@ -62,12 +66,26 @@ class Graph():
         Erreurs:
             SommetInexistantErreur: si l'une des arêtes n'existe pas
         """
-        self.dico[sa].append(sb)
-        self.dico[sb].append(sa)
-        # À faire : ajouter une vérification de l'existance des arêtes, en
+        self.dico[sa].add(sb)
+        self.dico[sb].add(sa)
+        # À faire : ajouter une vérification de l'existence des arêtes, en
         # récupérant d'abord les listes avec .get
 
-    def showLabyrinthe(self, nbli: int, nbcol: int, dist: float) -> None:
+    def placementOrigine(self):
+        """
+        Replace turtle en haut à droite du dessin, et le refait pointer vers la
+        droite, pinceau levé.
+        Préconditions:
+            Un environnement graphique doit permettre de dessiner dans une
+            fenêtre le labyrinthe.
+        Postconditions:
+            Replacement de turtle.
+        """
+        turtle.up()
+        turtle.goto(Graphe.DEPARTX, Graphe.DEPARTY)
+        turtle.setheading(0)
+
+    def showLabyrinthe(self, nbli: int = None, nbcol: int = None, dist: float = 50) -> None:
         """
         Dessine avec le module turtle le labyrinthe correspondant au graphe, en
         suivant les information données sur les dimensions du labyrinthe.
@@ -77,33 +95,131 @@ class Graph():
             Un environnement graphique doit permettre de dessiner dans une
             fenêtre le labyrinthe.
             Arguments:
-                nbli: int, le nombre de lignes du labyrinthe
-                nbcol: int, le nombre de colonnes du labyrinthe
-                dist: float, le côté d'une case de la grille
+                nbli: int, le nombre de lignes du labyrinthe. Par défaut, la
+                plus grande ordonnée trouvée dans le graphe.
+                nbcol: int, le nombre de colonnes du labyrinthe. Par défaut, la
+                plus grande abscisse trouvée dans le graphe.
+                dist: float, le côté d'une case de la grille. Par défaut une
+                valeur de 50.
         Postconditions:
             Apparition à l'écran du labyrinthe.
         """
-        # À faire : ajout éventuel d'erreurs pour divers cas
+        if nbli is None:
+            pass # À faire : Détecter le nombre de lignes
+        if nbcol is None:
+            pass # À faire : Détecter le nombre de colonnes
 
         self.cadre(nbli,nbcol,dist)
         self.paroisVerticales(nbli,nbcol,dist)
         self.paroisHorizontales(nbli,nbcol,dist)
 
     def cadre(self, nbli: int, nbcol: int, dist: float) -> None:
-        pass
+        """
+        Dessine un cadre au labyrinthe représenté par le graphe, selon un nombre
+        de lignes, colonnes, et un côté des cases.
+        Préconditions:
+            Un environnement graphique doit permettre d'utiliser turtle.
+            Arguments:
+                nbli: int, le nombre de lignes du labyrinthe dont on dessine le
+                cadre.
+                nbcol: int, le nombre de colonnes du labyrinthe dont on dessine le
+                cadre.
+        Postconditions:
+            Dessine un cadre pour afficher le labyrinthe représenté par le
+            graphe.
+        """
+        self.placementOrigine()
+        turtle.down()
+        for _ in range(2):
+            turtle.forward(dist*nbcol)
+            turtle.right(90)
+            turtle.forward(dist*nbli)
+            turtle.right(90)
+
+    def paroisVerticales(self, nbli: int, nbcol: int, dist: int):
+        """
+        Dessine les parois verticales du labyrinthe représenté par le graphe,
+        selon un nombre de lignes, colonnes, et un côté des cases.
+        Préconditions:
+            Le graphe doit contenir tous les points dans lesquels passe le
+            dessin selon les dimensions données.
+            Un environnement graphique doit permettre d'utiliser turtle.
+            Arguments:
+                nbli: int, le nombre de lignes du labyrinthe dont on dessine
+                les parois verticales.
+                nbcol: int, le nombre de colonnes du labyrinthe dont on dessine
+                les parois verticales.
+        Postconditions:
+            Dessine les bordures verticales du labyrinthe représenté par le
+            graphe.
+        """
+        self.placementOrigine()
+        for ligne in range(1, nbli+1):
+            for colonne in range(1, nbcol):
+                # Pas besoin de passer sur la dernière case des lignes pour dessiner
+                turtle.forward(dist)
+                if (ligne, colonne+1) not in self.dico[(ligne,colonne)]:
+                    # Dessine s'il n'y a pas de liaison entre cases voisines
+                    turtle.right(90)
+                    turtle.down()
+                    turtle.forward(dist)
+                    turtle.up()
+                    turtle.backward(dist)
+                    turtle.left(90)
+            turtle.backward((nbcol-1)*dist) # Retour en début de ligne
+            turtle.right(90)
+            turtle.forward(dist) # Descente d'une ligne
+            turtle.left(90) # Réorientation
+
+    def paroisHorizontales(self, nbli: int, nbcol: int, dist: int):
+        """
+        Dessine les parois horizontales du labyrinthe représenté par le graphe,
+        selon un nombre de lignes, colonnes, et un côté des cases.
+        Préconditions:
+            Le graphe doit contenir tous les points dans lesquels passe le
+            dessin selon les dimensions données.
+            Un environnement graphique doit permettre d'utiliser turtle.
+            Arguments:
+                nbli: int, le nombre de lignes du labyrinthe dont on dessine
+                les parois horizontales.
+                nbcol: int, le nombre de colonnes du labyrinthe dont on dessine
+                les parois horizontales.
+        Postconditions:
+            Dessine les bordures horizontales du labyrinthe représenté par le
+            graphe.
+        """
+        self.placementOrigine()
+        turtle.right(90) # Placement dans le sens vertical
+        for colonne in range(1, nbcol+1):
+            for ligne in range(1, nbli):
+                # Pas besoin de passer sur la dernière case des lignes pour dessiner
+                turtle.forward(dist)
+                if (ligne+1, colonne) not in self.dico[(ligne,colonne)]:
+                    # Dessine s'il n'y a pas de liaison entre cases voisines
+                    turtle.left(90)
+                    turtle.down()
+                    turtle.forward(dist)
+                    turtle.up()
+                    turtle.backward(dist)
+                    turtle.right(90)
+            turtle.backward((nbli-1)*dist) # Retour en début de ligne
+            turtle.left(90)
+            turtle.forward(dist) # Descente d'une ligne
+            turtle.right(90) # Réorientation
+
 
 # Constantes générales
 HORIZONTALE = 8
 VERTICALE = 4
 
 
-LstSommet = Graph()
+LstSommet = Graphe()
 
 for counta in range(1, VERTICALE+1):
     for countb in range(1, HORIZONTALE+1):
         LstSommet.addSommet((counta,countb))
 
-arretes = [
+aretes = [
         [(1,1),(2,1)],
         [(2,1),(2,2)],
         [(2,2),(3,2)],
@@ -137,7 +253,8 @@ arretes = [
         [(2,5),(2,6)],
         ]
 
-for arrete in arretes:
-    LstSommet.addArete(arrete[0],arrete[1])
+for arete in aretes:
+    LstSommet.addArete(arete[0],arete[1])
 
 print(LstSommet)
+LstSommet.showLabyrinthe(VERTICALE, HORIZONTALE, 50)
