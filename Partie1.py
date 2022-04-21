@@ -17,6 +17,8 @@ class Graphe():
     # multiples. Il est possible de prévenir les boucles (seulement si le coût
     # n'est pas plus grand).
 
+    # À faire : possibilité de faire des labyrinthes non rectangles ?
+
     # Constantes de classe
     DEPARTX = -320
     DEPARTY = 250
@@ -206,6 +208,28 @@ class Graphe():
             turtle.left(90)
             turtle.forward(dist) # Descente d'une ligne
             turtle.right(90) # Réorientation
+
+    def drawGraph(self) -> None:
+        """
+        Affiche à l'écran le labyrinthe représenté par le graphe ainsi que ses noeuds 
+        et chemins à l'aide du module turtle, en admettant que celui-ci
+        représente un labyrinthe rectangulaire.
+        Chaque noeud est représenté par un cercle, et les chemins sont
+        représentés par des segments horizontaux ou verticaux reliant les
+        cercles.
+        Préconditions:
+            Le graphe doit représenter un labyrinthe rectangulaire.
+            Un environnement graphique doit être disponible.
+        Postconditions:
+            Dessin à l'écran du labyrinthe et de ses noeuds, avec les chemins
+            les reliant.
+        """
+        # À faire : Proposer des arguments du même type que showLabyrinthe()
+        #   pour plus de flexibilité, au moins sur le côté
+        self.showLabyrinthe()
+        # Dessine les noeuds sous forme de rond
+        self.cheminsHorizontaux()
+        self.cheminsVerticaux()
 
 
 # Constantes générales
