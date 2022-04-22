@@ -73,7 +73,7 @@ class Graphe():
         # À faire : ajouter une vérification de l'existence des arêtes, en
         # récupérant d'abord les listes avec .get
 
-    def placementOrigine(self):
+    def _placementOrigine(self):
         """
         Replace turtle en haut à droite du dessin, et le refait pointer vers la
         droite, pinceau levé.
@@ -87,7 +87,36 @@ class Graphe():
         turtle.goto(Graphe.DEPARTX, Graphe.DEPARTY)
         turtle.setheading(0)
 
-    def showLabyrinthe(self, nbli: int = None, nbcol: int = None, dist: float = 50) -> None:
+    def _limites(self, besoins: int) -> (int, int, float):
+        """
+        Renvoie les lignes et les colonnes que constitue le graphe si il
+        représente bien un labyrinthe rectangle. Les informations non demandées
+        auront pour valeur 0.
+        Préconditions:
+            Le graphe doit bien représenter un graphe rectangle.
+            Arguments:
+                besoins: int, une bitmap représentant les besoins
+                    4 représente le nombre de lignes
+                    2 représente le nombre de colonnes
+                    1 représente le côté des cases
+        Postconditions:
+            Renvoie:
+                tuple, un tuple de trois valeurs, contenant la valeur requise ou
+                0 si la valeur n'était pas requise.
+        """
+        nbli = 0
+        nbcol = 0
+        # À faire : améliorer le calcul de la distance potentielle renvoyée
+        dist = 50
+        if besoins & 4:
+            nbli = max([elt[0] for elt in self.dico.keys])
+        if besoins & 2:
+            nbcol = max([elt[1] for elt in self.dico.keys])
+        # À faire : réimplanter pour une meilleure efficacité
+        return (nbli,nbcol,dist)
+
+    def showLabyrinthe(self, nbli: int = None, nbcol: int = None, dist: float \
+            = None) -> None:
         """
         Dessine avec le module turtle le labyrinthe correspondant au graphe, en
         suivant les information données sur les dimensions du labyrinthe.
@@ -106,16 +135,20 @@ class Graphe():
         Postconditions:
             Apparition à l'écran du labyrinthe.
         """
-        if nbli is None:
-            pass # À faire : Détecter le nombre de lignes
-        if nbcol is None:
-            pass # À faire : Détecter le nombre de colonnes
+        besoins = 0
+        if nbli is None: besoins+=4
+        if nbcol is None: besoins+=2
+        if dist is None: besoins+=1
+        dimensions = self._limites(besoins)
+        if nbli is None: nbli = dimensions[0]
+        if nbcol is None: nbli = dimensions[1]
+        if dist is None: nbli = dimensions[2]
 
-        self.cadre(nbli,nbcol,dist)
-        self.paroisVerticales(nbli,nbcol,dist)
-        self.paroisHorizontales(nbli,nbcol,dist)
+        self._cadre(nbli,nbcol,dist)
+        self._paroisVerticales(nbli,nbcol,dist)
+        self._paroisHorizontales(nbli,nbcol,dist)
 
-    def cadre(self, nbli: int, nbcol: int, dist: float) -> None:
+    def _cadre(self, nbli: int, nbcol: int, dist: float) -> None:
         """
         Dessine un cadre au labyrinthe représenté par le graphe, selon un nombre
         de lignes, colonnes, et un côté des cases.
@@ -130,7 +163,7 @@ class Graphe():
             Dessine un cadre pour afficher le labyrinthe représenté par le
             graphe.
         """
-        self.placementOrigine()
+        self._placementOrigine()
         turtle.down()
         for _ in range(2):
             turtle.forward(dist*nbcol)
@@ -138,7 +171,7 @@ class Graphe():
             turtle.forward(dist*nbli)
             turtle.right(90)
 
-    def paroisVerticales(self, nbli: int, nbcol: int, dist: int):
+    def _paroisVerticales(self, nbli: int, nbcol: int, dist: int):
         """
         Dessine les parois verticales du labyrinthe représenté par le graphe,
         selon un nombre de lignes, colonnes, et un côté des cases.
@@ -155,7 +188,9 @@ class Graphe():
             Dessine les bordures verticales du labyrinthe représenté par le
             graphe.
         """
-        self.placementOrigine()
+        # À faire : ajouter un error check avec .get() pour éviter une valeur
+        # inexistante
+        self._placementOrigine()
         for ligne in range(1, nbli+1):
             for colonne in range(1, nbcol):
                 # Pas besoin de passer sur la dernière case des lignes pour dessiner
@@ -173,7 +208,7 @@ class Graphe():
             turtle.forward(dist) # Descente d'une ligne
             turtle.left(90) # Réorientation
 
-    def paroisHorizontales(self, nbli: int, nbcol: int, dist: int):
+    def _paroisHorizontales(self, nbli: int, nbcol: int, dist: int):
         """
         Dessine les parois horizontales du labyrinthe représenté par le graphe,
         selon un nombre de lignes, colonnes, et un côté des cases.
@@ -190,7 +225,9 @@ class Graphe():
             Dessine les bordures horizontales du labyrinthe représenté par le
             graphe.
         """
-        self.placementOrigine()
+        # À faire : ajouter un error check avec .get() pour éviter une valeur
+        # inexistante
+        self._placementOrigine()
         turtle.right(90) # Placement dans le sens vertical
         for colonne in range(1, nbcol+1):
             for ligne in range(1, nbli):
@@ -228,6 +265,14 @@ class Graphe():
         #   pour plus de flexibilité, au moins sur le côté
         self.showLabyrinthe()
         # Dessine les noeuds sous forme de rond
+        self._placementOrigine()
+        turtle.forward(25)
+        turtle.right(90)
+        turtle.forward(45)
+        turtle.left(90)
+        for _ in range():
+            turtle.circle(20)
+
         self.cheminsHorizontaux()
         self.cheminsVerticaux()
 
