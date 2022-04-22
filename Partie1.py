@@ -104,6 +104,9 @@ class Graphe():
                 tuple, un tuple de trois valeurs, contenant la valeur requise ou
                 0 si la valeur n'était pas requise.
         """
+        # À faire : cette fonction devra être en charge de la vérification des
+        # erreurs : si le graphe ne représente pas un labyrinthe rectangle,
+        # l'erreur est levée ici.
         nbli = 0
         nbcol = 0
         # À faire : améliorer le calcul de la distance potentielle renvoyée
@@ -246,7 +249,7 @@ class Graphe():
             turtle.forward(dist) # Descente d'une ligne
             turtle.right(90) # Réorientation
 
-    def drawGraph(self) -> None:
+    def drawGraph(self, nbli: int = None, nbcol: int = None, dist: float = None) -> None:
         """
         Affiche à l'écran le labyrinthe représenté par le graphe ainsi que ses noeuds 
         et chemins à l'aide du module turtle, en admettant que celui-ci
@@ -261,20 +264,106 @@ class Graphe():
             Dessin à l'écran du labyrinthe et de ses noeuds, avec les chemins
             les reliant.
         """
-        # À faire : Proposer des arguments du même type que showLabyrinthe()
-        #   pour plus de flexibilité, au moins sur le côté
-        self.showLabyrinthe()
-        # Dessine les noeuds sous forme de rond
-        self._placementOrigine()
-        turtle.forward(25)
-        turtle.right(90)
-        turtle.forward(45)
-        turtle.left(90)
-        for _ in range():
-            turtle.circle(20)
+        # Récupération des dimensions s'il y a des paramètres par défaut
+        besoins = 0
+        if nbli is None: besoins+=4
+        if nbcol is None: besoins+=2
+        if dist is None: besoins+=1
+        dimensions = self._limites(besoins)
+        if nbli is None: nbli = dimensions[0]
+        if nbcol is None: nbli = dimensions[1]
+        if dist is None: nbli = dimensions[2]
 
-        self.cheminsHorizontaux()
-        self.cheminsVerticaux()
+        self.showLabyrinthe(nbli, nbcol, dist)
+        # Dessine les noeuds sous forme de rond
+        # En cas de réutilisation, ce processus peut être détachésous frme de
+        # fonction.
+        self._placementOrigine()
+        turtle.forward(dist/2)
+        turtle.right(90)
+        turtle.forward(dist*4/5)
+        turtle.left(90)
+        for _ in range(nbli):
+            for _ in range(nbcol):
+                turtle.down()
+                turtle.circle(0.25*dist) # Cercle de rayon du quart de la case
+                turtle.up()
+                turtle.forward(dist)
+            turtle.backward(dist*nbcol)
+            turtle.right(90)
+            turtle.forward(dist)
+            turtle.left(90)
+        # Dessin des chemins entre les noeuds
+        self._cheminsHorizontaux(nbli, nbcol, dist)
+        self._cheminsVerticaux(nbli, nbcol, dist)
+
+    # Il y a un problème avec l'ordre de dessin : si cette fonction était
+    # exécutée en même temps que le dessin des bordures horizontales dans le
+    # cadre, l'efficacité serait bien plus grande.
+    def _cheminsHorizontaux(self, nbli, nbcol, dist) -> None:
+        """
+        Affiche les chemins horizontaux entre les noeuds dessinés par
+        self.drawGraph, les reliant s'il existe une arête reliant ces deux
+        sommets.
+        Préconditions:
+            Le graphe doit représenter un labyrinthe rectangle.
+            Un environnement graphique doit être disponible pour le dessin.
+            Arguments:
+                nbli : int, le nombre de lignes du labyrinthe
+                nbcol : int, le nombre de colonnes du labyrinthe
+                dist : float, le côté de chaque case
+        Postconditions:
+            Dessin des chemins horizontaux entre les cases ayant une arête
+            les reliant.
+        """
+        self._placementOrigine()
+        turtle.forward(dist*3/4)
+        turtle.right(90)
+        turtle.forward(dist*1/2)
+        turtle.left(90)
+        for ligne in range(1, nbli+1):
+            for colonne in range(1, nbcol):
+                if (ligne,colonne+1) in self.dico[(ligne,colonne)]:
+                    turtle.down()
+                turtle.forward(dist/2)
+                turtle.up()
+                turtle.forward(dist/2)
+            turtle.backward(dist*(nbcol-1))
+            turtle.right(90)
+            turtle.forward(dist)
+            turtle.left(90)
+
+    def _cheminsVerticaux(self, nbli, nbcol, dist) -> None:
+        """
+        Affiche les chemins verticaux entre les noeuds dessinés par
+        self.drawGraph, les reliant s'il existe une arête reliant ces deux
+        sommets.
+        Préconditions:
+            Le graphe doit représenter un labyrinthe rectangle.
+            Un environnement graphique doit être disponible pour le dessin.
+            Arguments:
+                nbli : int, le nombre de lignes du labyrinthe
+                nbcol : int, le nombre de colonnes du labyrinthe
+                dist : float, le côté de chaque case
+        Postconditions:
+            Dessin des chemins verticaux entre les cases ayant une arête
+            les reliant.
+        """
+        self._placementOrigine()
+        turtle.forward(dist*1/2)
+        turtle.right(90)
+        turtle.forward(dist*3/4)
+        for colonne in range(1, nbcol+1):
+            for ligne in range(1, nbli):
+                if (ligne+1,colonne) in self.dico[(ligne,colonne)]:
+                    turtle.down()
+                turtle.forward(dist/2)
+                turtle.up()
+                turtle.forward(dist/2)
+            turtle.backward(dist*(nbli-1))
+            turtle.left(90)
+            turtle.forward(dist)
+            turtle.right(90)
 
 
 # Constantes générales
@@ -325,5 +414,9 @@ aretes = [
 for arete in aretes:
     LstSommet.addArete(arete[0],arete[1])
 
+turtle.speed(0) # Augmentation de la vitesse de turtle pour les tests
+
 print(LstSommet)
-LstSommet.showLabyrinthe(VERTICALE, HORIZONTALE, 50)
+# Premier test avec seulement les arêtes du labyrinthe
+# LstSommet.showLabyrinthe(VERTICALE, HORIZONTALE, 50)
+LstSommet.drawGraph(VERTICALE, HORIZONTALE, 50)
