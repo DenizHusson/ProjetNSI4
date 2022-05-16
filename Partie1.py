@@ -1,39 +1,9 @@
 import turtle
 from time import sleep
+from queue import LifoQueue
 
 
 # À faire : création d'une erreur personnalisée pour les besoins de la classe
-
-
-class LIFO():
-    """
-    Pile de tuples d'entiers, utilisée pour le parcours en profondeur du
-    graphe.
-    """
-    def __init__(self, valeur: tuple[int], suivant = None):
-        """
-        Crée une pile a partir d'une valeur donnée et éventuellement du dessous
-        de la pile.
-        Préconditions:
-            Arguments:
-                valeur: tuple[int], la représentation des coordonées d'un point dans
-                    le graphe
-                suivant: LIFO, la pile en dessous de la valeur actuelle ou None.
-                    Par défaut None.
-        Postconditions:
-            Création d'un objet pile avec la valeur valeur et la pile suivante
-                suivant.
-        """
-        self.valeur = valeur
-        self.suivant = suivant
-
-    def pop(self) -> tuple[int]:
-        valeur = self.valeur
-        self = self.suivant
-        return valeur
-
-    def push(self, valeur) -> None:
-        self = LIFO(valeur, self)
 
 
 class Graphe():
@@ -399,37 +369,137 @@ class Graphe():
 
     def parcours_dfs(self, casex: int = 1, casey: int = 1) -> list[tuple[int]]:
         """
-        Renvoie sous la forme d'une liste de noms le parcours en profondeur du
-        graphe a partir d'un point donne.
+        Renvoie sous la forme d'une liste de coordonées le parcours en
+        profondeur du graphe a partir d'un point donne.
         Préconditions:
             Arguments:
                 casex: int, la position en x de la case de départ. Par défaut 1.
                 casey: int, la position en y de la case de départ. Par défaut 1.
         Postconditions:
             Sortie:
-                chemin: list[str], le parcours en profondeur du graphe depuis le
+                chemin: list[tuple[int]], le parcours en profondeur du graphe depuis le
                 point donne.
         """
-        suivant = LIFO((casex,casey)) # Création d'une pile
+        suivant = LifoQueue() # Création d'une pile
+        suivant.put((casex,casey))
         vus = [] # Dans un souci de vitesse, il serait possible d'utiliser une
         # dictionnaire, puisque celui-ci est hashé et conserve l'ordre des
         # éléments depuis Python 3.7
-        while suivant is not None:
-            sommet = suivant.pop()
-            sleep(1)
+        while not(suivant.empty()):
+            sommet = suivant.get()
             vus.append(sommet)
             for voisin in self.dico[sommet]:
                 if voisin not in vus:
-                    suivant.push(voisin)
-            print(vus)
+                    suivant.put(voisin)
         return vus
 
-    def showParcours(self, casex:int = 1, casey:int = 1, vitesse:int = 1):
-        pass
+    def parcours_dfs_parents(self, casex: int = 1, casey: int = 1) -> list[tuple]:
+        """
+        Renvoie sous la forme d'une liste de coordonnées acompagnées du point
+        précédent le parcours en profondeur du graphe a partir d'un point donne.
+        Préconditions:
+            Arguments:
+                casex: int, la position en x de la case de départ. Par défaut 1.
+                casey: int, la position en y de la case de départ. Par défaut 1.
+        Postconditions:
+            Sortie:
+                chemin: list[tuple], le parcours en profondeur du graphe depuis le
+                point donne.
+        """
+        suivant = LifoQueue() # Création d'une pile
+        suivant.put((casex,casey,None))
+        vus = [] # Dans un souci de vitesse, il serait possible d'utiliser une
+        # dictionnaire, puisque celui-ci est hashé et conserve l'ordre des
+        # éléments depuis Python 3.7
+        while not(suivant.empty()):
+            sommet = suivant.get()
+            vus.append(sommet)
+            for voisin in self.dico[sommet[:2]]:
+                for vu in vus:
+                    if voisin == vu[:2]:
+                        break
+                else:
+                    suivant.put((*voisin, (sommet[:2])))
+        return vus
 
+    def showParcours(self, distance, casex:int = 1, casey:int = 1, vitesse:int = 1):
+        """
+        Dessine sur le labyrinthe des points bleus sur les cases parcourues par
+        une dfs, une par une, à parti du résultat de la DFS.
+        La vitesse entre la désignation de chaque point peut être modifiée.
+        Préconditions:
+            Arguments:
+                distance: int, la distance avec laquelle le labyrinthe a été dessiné
+                casex: int, la coordonnée x de la case par laquelle commencer,
+                    par défaut 1
+                casey: int, la coordonnée y de la case par laquelle commencer,
+                    par défaut 1
+                vitesse: int, le ratio par lequel la vitesse doit être multiplié.
+                    Par défaut 1, pour un dessin d'un point toutes les 0,5 secondes.
+        Postconditions:
+            Dessin à l'écran des points, un par un, en bleu, dans l'ordre de la DFS.
+                Cette fonction utilisant sleep, elle est bloquante pendant tout le
+                temps du dessin.
+        """
+        turtle.fillcolor("blue")
+        sleeptime = 0.5/vitesse
+        turtle.up()
+        for coords in self.parcours_dfs(casex, casey):
+            turtle.goto(Graphe.DEPARTX + (coords[1]-0.75)*distance, Graphe.DEPARTY - \
+                    (coords[0]-0.45)*distance)
+            # Coefficients hasardeux
+            turtle.begin_fill()
+            turtle.down()
+            turtle.circle(0.25*distance) # Cercle de rayon du quart de la case
+            turtle.up()
+            turtle.end_fill()
+            sleep(sleeptime)
 
+    def showChemin(self, distance: int, chemin: list[tuple] = None, \
+            vitesse:int = 1) -> None:
+        """
+        Dessine sur le labyrinthe à l'écran des lignes rouges entre les cases
+        parcourues par une dfs, une par une, à partir du trajet de la DFS.
+        La vitesse entre la désignation de chaque point peut être modifiée.
+        Préconditions:
+            Une fenêtre turtle doit être disponible, et un labyrinthe
+            correspondant aux données de DFS envoyées doit y être affiché avec
+            les méthodes de la classe Graphe.
+            Arguments:
+                lst: list[tuple], une liste contenant les cases par lesquelles
+                    passe la DFS et de laquelle elle vient sur le labyrinthe.
+                    Par défaut None, pour utiliser la liste globale du graphe
+                    affiché.
+                distance: int, la distance avec laquelle le graphe a
+                    été dessiné
+                vitesse: int, le ratio par lequel la vitesse doit être
+                    multiplié.  Par défaut 1, pour un dessin d'un point toutes
+                    les 0,5 secondes.
+        Postconditions:
+            Dessin à l'écran des lignes, une par une, en bleu, dans l'ordre de
+            la DFS.  Cette fonction utilisant sleep, elle est bloquante pendant
+            tout le temps du dessin.
+        """
+        if chemin is None:
+            chemin = self.parcours_dfs_parents()
+        turtle.pencolor("red")
+        sleeptime = 0.5/vitesse
+        turtle.up()
+        for coords in chemin:
+            if coords[2] is not None:
+                turtle.goto(Graphe.DEPARTX + (coords[2][1]-0.5)*distance, \
+                        Graphe.DEPARTY - (coords[2][0]-0.5)*distance)
+                # Coefficients hasardeux
+                turtle.begin_fill()
+                turtle.down()
+                turtle.goto(Graphe.DEPARTX + (coords[1]-0.5)*distance, \
+                        Graphe.DEPARTY - (coords[0]-0.5)*distance)
+                turtle.up()
+                turtle.end_fill()
+                sleep(sleeptime)
 
-def showParcours(lst: list[tuple[int]], distance: int, vitesse:int = 1) -> None:
+def showParcours(lst: list[tuple[int]], distance:int, \
+        vitesse:int = 1) -> None:
     """
     Dessine sur le labyrinthe à l'écran des points bleus sur les cases
     parcourues par un dfs, une par une, à parti du résultat de la DFS.
@@ -453,15 +523,52 @@ def showParcours(lst: list[tuple[int]], distance: int, vitesse:int = 1) -> None:
     sleeptime = 0.5/vitesse
     turtle.up()
     for coords in lst:
-        turtle.goto(Graphe.DEPARTX + coords[0]*distance, Graphe.DEPARTY + \
-                coords[1]*distance)
-        turle.begin_fill()
+        turtle.goto(Graphe.DEPARTX + (coords[1]-0.75)*distance, Graphe.DEPARTY - \
+                (coords[0]-0.45)*distance)
+        # Coefficients hasardeux
+        turtle.begin_fill()
         turtle.down()
-        turtle.circle(0.25*dist) # Cercle de rayon du quart de la case
+        turtle.circle(0.25*distance) # Cercle de rayon du quart de la case
         turtle.up()
         turtle.end_fill()
         sleep(sleeptime)
 
+def showChemin(chemin: list[tuple], distance: int, vitesse:int = 1) -> None:
+    """
+    Dessine sur le labyrinthe à l'écran des lignes rouges entre les cases
+    parcourues par une dfs, une par une, à partir du trajet de la DFS.
+    La vitesse entre la désignation de chaque point peut être modifiée.
+    Préconditions:
+        Une fenêtre turtle doit être disponible, et un labyrinthe correspondant
+        aux données de DFS envoyées doit y être affiché avec les méthodes de la
+        classe Graphe.
+        Arguments:
+            lst: list[tuple], une liste contenant les cases par lesquelles
+                passe la DFS et de laquelle elle vient sur le labyrinthe
+                affiché.
+            distance: int, la distance avec laquelle le graphe a été dessiné
+            vitesse: int, le ratio par lequel la vitesse doit être multiplié.
+                Par défaut 1, pour un dessin d'un point toutes les 0,5 secondes.
+    Postconditions:
+        Dessin à l'écran des lignes, une par une, en bleu, dans l'ordre de la
+        DFS.  Cette fonction utilisant sleep, elle est bloquante pendant tout le
+        temps du dessin.
+    """
+    turtle.pencolor("red")
+    sleeptime = 0.5/vitesse
+    turtle.up()
+    for coords in chemin:
+        if coords[2] is not None:
+            turtle.goto(Graphe.DEPARTX + (coords[2][1]-0.5)*distance, \
+                    Graphe.DEPARTY - (coords[2][0]-0.5)*distance)
+            # Coefficients hasardeux
+            turtle.begin_fill()
+            turtle.down()
+            turtle.goto(Graphe.DEPARTX + (coords[1]-0.5)*distance, \
+                    Graphe.DEPARTY - (coords[0]-0.5)*distance)
+            turtle.up()
+            turtle.end_fill()
+            sleep(sleeptime)
 
 # Constantes générales
 HORIZONTALE = 8
@@ -518,3 +625,4 @@ print(LstSommet)
 # LstSommet.showLabyrinthe(VERTICALE, HORIZONTALE, 50)
 LstSommet.drawGraph(VERTICALE, HORIZONTALE, 50)
 showParcours(LstSommet.parcours_dfs(), 50)
+showChemin(LstSommet.parcours_dfs_parents(), 50)
