@@ -1,7 +1,39 @@
 import turtle
+from time import sleep
 
 
 # À faire : création d'une erreur personnalisée pour les besoins de la classe
+
+
+class LIFO():
+    """
+    Pile de tuples d'entiers, utilisée pour le parcours en profondeur du
+    graphe.
+    """
+    def __init__(self, valeur: tuple[int], suivant = None):
+        """
+        Crée une pile a partir d'une valeur donnée et éventuellement du dessous
+        de la pile.
+        Préconditions:
+            Arguments:
+                valeur: tuple[int], la représentation des coordonées d'un point dans
+                    le graphe
+                suivant: LIFO, la pile en dessous de la valeur actuelle ou None.
+                    Par défaut None.
+        Postconditions:
+            Création d'un objet pile avec la valeur valeur et la pile suivante
+                suivant.
+        """
+        self.valeur = valeur
+        self.suivant = suivant
+
+    def pop(self) -> tuple[int]:
+        valeur = self.valeur
+        self = self.suivant
+        return valeur
+
+    def push(self, valeur) -> None:
+        self = LIFO(valeur, self)
 
 
 class Graphe():
@@ -365,6 +397,71 @@ class Graphe():
             turtle.forward(dist)
             turtle.right(90)
 
+    def parcours_dfs(self, casex: int = 1, casey: int = 1) -> list[tuple[int]]:
+        """
+        Renvoie sous la forme d'une liste de noms le parcours en profondeur du
+        graphe a partir d'un point donne.
+        Préconditions:
+            Arguments:
+                casex: int, la position en x de la case de départ. Par défaut 1.
+                casey: int, la position en y de la case de départ. Par défaut 1.
+        Postconditions:
+            Sortie:
+                chemin: list[str], le parcours en profondeur du graphe depuis le
+                point donne.
+        """
+        suivant = LIFO((casex,casey)) # Création d'une pile
+        vus = [] # Dans un souci de vitesse, il serait possible d'utiliser une
+        # dictionnaire, puisque celui-ci est hashé et conserve l'ordre des
+        # éléments depuis Python 3.7
+        while suivant is not None:
+            sommet = suivant.pop()
+            sleep(1)
+            vus.append(sommet)
+            for voisin in self.dico[sommet]:
+                if voisin not in vus:
+                    suivant.push(voisin)
+            print(vus)
+        return vus
+
+    def showParcours(self, casex:int = 1, casey:int = 1, vitesse:int = 1):
+        pass
+
+
+
+def showParcours(lst: list[tuple[int]], distance: int, vitesse:int = 1) -> None:
+    """
+    Dessine sur le labyrinthe à l'écran des points bleus sur les cases
+    parcourues par un dfs, une par une, à parti du résultat de la DFS.
+    La vitesse entre la désignation de chaque point peut être modifiée.
+    Préconditions:
+        Une fenêtre turtle doit être disponible, et un labyrinthe correspondant
+        aux données de DFS envoyées doit y être affiché avec les méthodes de la
+        classe Graphe.
+        Arguments:
+            lst: list[tuple[int]], une liste contenant les cases par lesquelles
+                passe la DFS sur le labyrinthe affiché.
+            distance: int, la distance avec laquelle le graphe a été dessiné
+            vitesse: int, le ratio par lequel la vitesse doit être multiplié.
+                Par défaut 1, pour un dessin d'un point toutes les 0,5 secondes.
+    Postconditions:
+        Dessin à l'écran des points, un par un, en bleu, dans l'ordre de la DFS.
+            Cette fonction utilisant sleep, elle est bloquante pendant tout le
+            temps du dessin.
+    """
+    turtle.fillcolor("blue")
+    sleeptime = 0.5/vitesse
+    turtle.up()
+    for coords in lst:
+        turtle.goto(Graphe.DEPARTX + coords[0]*distance, Graphe.DEPARTY + \
+                coords[1]*distance)
+        turle.begin_fill()
+        turtle.down()
+        turtle.circle(0.25*dist) # Cercle de rayon du quart de la case
+        turtle.up()
+        turtle.end_fill()
+        sleep(sleeptime)
+
 
 # Constantes générales
 HORIZONTALE = 8
@@ -420,3 +517,4 @@ print(LstSommet)
 # Premier test avec seulement les arêtes du labyrinthe
 # LstSommet.showLabyrinthe(VERTICALE, HORIZONTALE, 50)
 LstSommet.drawGraph(VERTICALE, HORIZONTALE, 50)
+showParcours(LstSommet.parcours_dfs(), 50)
