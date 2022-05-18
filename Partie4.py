@@ -1,6 +1,9 @@
 
-def passage(case1,case2):
-    
+def passage(case1,case2,LstSommet):
+    for valeur in LstSommet[case1]:
+        if valeur == case2:
+            return True    
+    return False
 
 ok = True
 assert passage((1,2),(2,2))==True , "erreur"
