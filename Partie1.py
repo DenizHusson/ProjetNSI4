@@ -753,3 +753,5 @@ if __name__=="__main__":
     # showChemin(LstSommet.moinsCourtChemin((1,1), (4,8)), 50)
     # Parcours le plus court
     showChemin(LstSommet.plusCourtChemin((1,1), (4,8)), 50)
+    
+    turtle.mainloop()
