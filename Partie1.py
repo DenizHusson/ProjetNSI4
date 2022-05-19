@@ -1,6 +1,6 @@
 import turtle
 from time import sleep
-from queue import LifoQueue
+from queue import LifoQueue, Queue
 
 
 # À faire : création d'une erreur personnalisée pour les besoins de la classe
@@ -20,6 +20,12 @@ class Graphe():
     # n'est pas plus grand).
 
     # À faire : possibilité de faire des labyrinthes non rectangles ?
+
+    # Note : Bien qu'il soit bien plus lisible ici d'utiliser les coordonnées
+    # des points comme leur nom, cette approche est très efficace en gestion de
+    # mémoire. Une approche différente, comme le fait de mettre le premier nombre
+    # en centaines et le second en unités, auraient permis d'optimiser
+    # l'utilisation de la mémoire et le parcours des structures de données.
 
     # Constantes de classe
     DEPARTX = -320
@@ -75,7 +81,23 @@ class Graphe():
         # À faire : ajouter une vérification de l'existence des arêtes, en
         # récupérant d'abord les listes avec .get
 
-    def _placementOrigine(self):
+    def passage(self, case1: tuple[int], case2: tuple[int]) -> bool:
+        """
+        Renvoie sous la forme d'une valeur Booléenne l'existence ou non d'un passage
+        entre les sommets case1 et case2 du graphe. Si la case2 n'existe pas,
+        renvoie forcément False.
+        Préconditions:
+            Arguments:
+                case1: tuple[int], les coordonnées représentant le premier sommet
+                case2: tuple[int], les coordonnées représentant le second sommet
+        Postconditions:
+            Sortie:
+                bool, la véracité de l'existence d'un passage entre case1 et case2
+        """
+        # À faire : Test pour vérifier si la case1 existe bien
+        return case2 in self.dico[case1]
+
+    def _placementOrigine(self) -> None:
         """
         Replace turtle en haut à droite du dessin, et le refait pointer vers la
         droite, pinceau levé.
@@ -89,7 +111,7 @@ class Graphe():
         turtle.goto(Graphe.DEPARTX, Graphe.DEPARTY)
         turtle.setheading(0)
 
-    def _limites(self, besoins: int) -> (int, int, float):
+    def _limites(self, besoins: int) -> tuple:
         """
         Renvoie les lignes et les colonnes que constitue le graphe si il
         représente bien un labyrinthe rectangle. Les informations non demandées
@@ -251,7 +273,8 @@ class Graphe():
             turtle.forward(dist) # Descente d'une ligne
             turtle.right(90) # Réorientation
 
-    def drawGraph(self, nbli: int = None, nbcol: int = None, dist: float = None) -> None:
+    def drawGraph(self, nbli: int = None, nbcol: int = None, \
+            dist: float = None) -> None:
         """
         Affiche à l'écran le labyrinthe représenté par le graphe ainsi que ses noeuds 
         et chemins à l'aide du module turtle, en admettant que celui-ci
@@ -278,7 +301,7 @@ class Graphe():
 
         self.showLabyrinthe(nbli, nbcol, dist)
         # Dessine les noeuds sous forme de rond
-        # En cas de réutilisation, ce processus peut être détachésous frme de
+        # En cas de réutilisation, ce processus peut être détaché sous forme de
         # fonction.
         self._placementOrigine()
         turtle.forward(dist/2)
@@ -408,25 +431,26 @@ class Graphe():
                 point donne.
         """
         suivant = LifoQueue() # Création d'une pile
-        suivant.put(((casex,casey),None))
+        suivant.put((None, (casex,casey)))
         vus = [] # Dans un souci de vitesse, il serait possible d'utiliser une
         # dictionnaire, puisque celui-ci est hashé et conserve l'ordre des
         # éléments depuis Python 3.7
         while not(suivant.empty()):
             sommet = suivant.get()
             for vu in vus:
-                if sommet[0] == vu[0]: break
+                if sommet[1] == vu[1]: break
             else:
                 vus.append(sommet)
-                for voisin in self.dico[sommet[0]]:
-                    suivant.put((voisin, sommet[0]))
-        return vus
+                for voisin in self.dico[sommet[1]]:
+                    suivant.put((sommet[1], voisin))
+        return vus[1:] # Renvoie le parcours dans le bon sens, sans le
+            # premier élément ajouté
 
     def showParcours(self, distance, casex:int = 1, casey:int = 1, \
             vitesse:int = 1) -> None:
         """
         Dessine sur le labyrinthe des points bleus sur les cases parcourues par
-        une dfs, une par une, à parti du résultat de la DFS.
+        une dfs, une par une, à partir du résultat de la DFS.
         La vitesse entre la désignation de chaque point peut être modifiée.
         Préconditions:
             Arguments:
@@ -488,16 +512,102 @@ class Graphe():
         turtle.up()
         for coords in chemin:
             if coords[1] is not None:
-                turtle.goto(Graphe.DEPARTX + (coords[1][1]-0.5)*distance, \
-                        Graphe.DEPARTY - (coords[1][0]-0.5)*distance)
+                turtle.goto(Graphe.DEPARTX + (coords[0][1]-0.5)*distance, \
+                        Graphe.DEPARTY - (coords[0][0]-0.5)*distance)
                 # Coefficients hasardeux
                 turtle.begin_fill()
                 turtle.down()
-                turtle.goto(Graphe.DEPARTX + (coords[0][1]-0.5)*distance, \
-                        Graphe.DEPARTY - (coords[0][0]-0.5)*distance)
+                turtle.goto(Graphe.DEPARTX + (coords[1][1]-0.5)*distance, \
+                        Graphe.DEPARTY - (coords[1][0]-0.5)*distance)
                 turtle.up()
                 turtle.end_fill()
                 sleep(sleeptime)
+
+    def moinsCourtChemin(self, depart: tuple[int] = (1, 1), \
+            arivee: tuple[int] = (4,8)) -> list[tuple[tuple]]:
+        """
+        Renvoie sous la forme d'une liste un chemin allant des coordonnées
+        depart à arivée. Cette fonction utilisant simplement les données
+        trouvées avec le parcours DFS avec prédecesseurs, le chemin renvoyé ici
+        est rarement le plus court.
+        Préconditions:
+            Arguments:
+                depart: tuple[int], les coordonnées du point de départ du
+                    parcours
+                arivee: tuple[int], les coordonées du point d'arivee du 
+                    parcours
+        Postconditions:
+            sortie: list[tuple[tuple]], la liste des coordonnées des points par
+                lesquels passent le parcours entre les deux coordonnées, et le
+                point duquel le parcours vient. Si un chemin n'existe pas,
+                renvoie None.
+        """
+        dfs = self.parcours_dfs_parents(depart[0], depart[1])
+        actuel = (arivee, None)
+        chemin = []
+        # Le chemin est remonté jusqu'au départ
+        while actuel[0] != depart:
+            for case in dfs:
+                if case[1] == actuel[0]:
+                    # Prend la valeur de son prédecesseur
+                    actuel = case[0], case[1]
+                    chemin.insert(0, actuel)
+                    break
+            else:
+                return None # Si rien n'est trouvé, il n'y a pas de chemin
+        chemin.insert(0, actuel)
+        return chemin
+
+    def plusCourtChemin(self, depart: tuple[int] = (1, 1), \
+            arivee: tuple[int] = (4,8)) -> list[tuple[tuple]]:
+        """
+        Renvoie sous la forme d'une liste le chemin le plus court dans le
+        graphe entre les coordonées depart et arivee. Cette fonction renvoie
+        toujours le chemin le plus court, puisqu'elle utilise une BFS.
+        Préconditions:
+            Arguments:
+                depart: tuple[int], les coordonnées du point de départ du
+                    parcours
+                arivee: tuple[int], les coordonées du point d'arivee du 
+                    parcours
+        Postconditions:
+            sortie: list[tuple[int]], la liste des coordonnées des points par
+                lesquels passent le parcours le plus court entre les deux
+                coordonnées. Si un chemin n'existe pas, renvoie None.
+        """
+        vus = set(depart)
+        parents = {depart: None}
+        suivant = Queue()
+        suivant.put(depart)
+        # Construction de la bfs
+        # La fonction empty est manifestement déconseillée par le module dans
+        # les applications plus critiques, est préférée la mesure de la taille.
+        # Néanmoins, cette approche est toujours plus efficace.
+        while not(suivant.empty()):
+            actuel = suivant.get()
+            for voisin in self.dico[actuel]:
+                if voisin not in vus:
+                    vus.add(voisin)
+                    suivant.put(voisin)
+                    parents[voisin] = actuel
+                    if voisin == arivee:
+                        suivant = Queue() # Vide la file
+                        # Solution inefficace mais compréhensible, il serait
+                        # préférable d'effectuer un jump hors des boucles ou
+                        # d'utiliser un else sur le for pour rester dans le
+                        # while si arivee n'est pas atteint.
+                        # Une autre solution est de vérifier la nullité de
+                        # suivant à chaque fois, et mettre suivant = None
+                        # lorsque arivee est atteint.
+        del vus
+        del suivant
+        # Reconstruction du chemin
+        actuel = (arivee, None)
+        chemin = []
+        while actuel[1] != depart:
+            actuel = parents[actuel[0]], actuel[0]
+            chemin.insert(0, actuel)
+        return chemin
 
 def showParcours(lst: list[tuple[int]], distance:int, \
         vitesse:int = 1) -> None:
@@ -561,70 +671,85 @@ def showChemin(chemin: list[tuple[tuple]], distance: int, \
     turtle.up()
     for coords in chemin:
         if coords[1] is not None:
-            turtle.goto(Graphe.DEPARTX + (coords[1][1]-0.5)*distance, \
-                    Graphe.DEPARTY - (coords[1][0]-0.5)*distance)
+            turtle.goto(Graphe.DEPARTX + (coords[0][1]-0.5)*distance, \
+                    Graphe.DEPARTY - (coords[0][0]-0.5)*distance)
             # Coefficients hasardeux
             turtle.begin_fill()
             turtle.down()
-            turtle.goto(Graphe.DEPARTX + (coords[0][1]-0.5)*distance, \
-                    Graphe.DEPARTY - (coords[0][0]-0.5)*distance)
+            turtle.goto(Graphe.DEPARTX + (coords[1][1]-0.5)*distance, \
+                    Graphe.DEPARTY - (coords[1][0]-0.5)*distance)
             turtle.up()
             turtle.end_fill()
             sleep(sleeptime)
 
-# Constantes générales
-HORIZONTALE = 8
-VERTICALE = 4
+if __name__=="__main__":
+    # Constantes générales
+    HORIZONTALE = 8
+    VERTICALE = 4
 
+    LstSommet = Graphe()
 
-LstSommet = Graphe()
+    for counta in range(1, VERTICALE+1):
+        for countb in range(1, HORIZONTALE+1):
+            LstSommet.addSommet((counta,countb))
 
-for counta in range(1, VERTICALE+1):
-    for countb in range(1, HORIZONTALE+1):
-        LstSommet.addSommet((counta,countb))
+    aretes = [
+            [(1,1),(2,1)],
+            [(2,1),(2,2)],
+            [(2,2),(3,2)],
+            [(3,2),(4,2)],
+            [(4,2),(4,3)],
+            [(4,3),(4,4)],
+            [(2,2),(2,3)],
+            [(2,3),(1,3)],
+            [(1,3),(1,4)],
+            [(1,4),(2,4)],
+            [(1,4),(1,5)],
+            [(2,4),(3,4)],
+            [(3,4),(3,5)],
+            [(3,5),(3,6)],
+            [(3,6),(4,6)],
+            [(4,6),(4,5)],
+            [(3,6),(3,7)],
+            [(3,7),(4,7)],
+            [(4,7),(4,8)],
+            [(3,8),(4,8)],
+            [(2,8),(3,8)],
+            [(2,8),(1,8)],
+            [(1,7),(1,8)],
+            [(1,7),(1,6)],
+            [(2,6),(1,6)],
+            [(2,6),(3,6)],
+            [(2,6),(2,7)],
+            [(3,7),(2,7)],
+            [(1,4),(1,5)],
+            [(2,5),(1,5)],
+            [(2,5),(2,6)],
+            ]
 
-aretes = [
-        [(1,1),(2,1)],
-        [(2,1),(2,2)],
-        [(2,2),(3,2)],
-        [(3,2),(4,2)],
-        [(4,2),(4,3)],
-        [(4,3),(4,4)],
-        [(2,2),(2,3)],
-        [(2,3),(1,3)],
-        [(1,3),(1,4)],
-        [(1,4),(2,4)],
-        [(1,4),(1,5)],
-        [(2,4),(3,4)],
-        [(3,4),(3,5)],
-        [(3,5),(3,6)],
-        [(3,6),(4,6)],
-        [(4,6),(4,5)],
-        [(3,6),(3,7)],
-        [(3,7),(4,7)],
-        [(4,7),(4,8)],
-        [(3,8),(4,8)],
-        [(2,8),(3,8)],
-        [(2,8),(1,8)],
-        [(1,7),(1,8)],
-        [(1,7),(1,6)],
-        [(2,6),(1,6)],
-        [(2,6),(3,6)],
-        [(2,6),(2,7)],
-        [(3,7),(2,7)],
-        [(1,4),(1,5)],
-        [(2,5),(1,5)],
-        [(2,5),(2,6)],
-        ]
+    for arete in aretes:
+        LstSommet.addArete(arete[0],arete[1])
 
-for arete in aretes:
-    LstSommet.addArete(arete[0],arete[1])
+    turtle.speed(0) # Augmentation de la vitesse de turtle pour les tests
 
-turtle.speed(0) # Augmentation de la vitesse de turtle pour les tests
+    print(LstSommet)
 
-print(LstSommet)
-# Premier test avec seulement les arêtes du labyrinthe
-# LstSommet.showLabyrinthe(VERTICALE, HORIZONTALE, 50)
-LstSommet.drawGraph(VERTICALE, HORIZONTALE, 50)
-showParcours(LstSommet.parcours_dfs(), 50)
-showChemin(LstSommet.parcours_dfs_parents(), 50)
+    # # Premier test avec seulement les arêtes du labyrinthe
+    # LstSommet.showLabyrinthe(VERTICALE, HORIZONTALE, 50)
+    LstSommet.drawGraph(VERTICALE, HORIZONTALE, 50)
+    showParcours(LstSommet.parcours_dfs(), 50)
+
+    # Test des passages de case en case
+    # Les deux premiers tests sont volontairement faux
+    # assert LstSommet.passage((1,2),(2,2))==True , "Erreur"
+    # assert LstSommet.passage((2,2),(2,3))==False , "Erreur"
+    assert LstSommet.passage((2,2),(3,3))==False , "Erreur"
+    assert LstSommet.passage((2,2),(2,2))==False , "Erreur"
+    assert LstSommet.passage((2,3),(2,5))==False , "Erreur"
+
+    # # Montre le chemin pris par l'ensemble de la dfs
+    # showChemin(LstSommet.parcours_dfs_parents(), 50)
+    # # Parcours fourni par DFS
+    # showChemin(LstSommet.moinsCourtChemin((1,1), (4,8)), 50)
+    # Parcours le plus court
+    showChemin(LstSommet.plusCourtChemin((1,1), (4,8)), 50)
